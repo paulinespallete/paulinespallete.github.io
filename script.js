@@ -127,7 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const contactForm = document.getElementById('contactForm');
     
     if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission redirect
+            
             const name = document.getElementById('name').value;
             const submitBtn = contactForm.querySelector('button[type="submit"]');
             const originalContent = submitBtn.innerHTML;
@@ -154,26 +156,60 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             document.head.appendChild(style);
             
-            // Show success message after form submission
-            setTimeout(() => {
+            try {
+                // Submit form data to Formspree without redirect
+                const formData = new FormData(contactForm);
+                const response = await fetch('https://formspree.io/f/xqardadd', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    // Show success message
+                    submitBtn.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <span>Message Sent!</span>
+                    `;
+                    submitBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                    
+                    // Show confirmation alert with sender's name
+                    alert(`Dear ${name}, your message has been sent to Pauline. Thank you for reaching out!`);
+                    
+                    // Reset form after success
+                    setTimeout(() => {
+                        submitBtn.innerHTML = originalContent;
+                        submitBtn.style.background = '';
+                        submitBtn.disabled = false;
+                        contactForm.reset();
+                    }, 3000);
+                } else {
+                    throw new Error('Form submission failed');
+                }
+            } catch (error) {
+                // Show error message
                 submitBtn.innerHTML = `
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"/>
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
-                    <span>Message Sent!</span>
+                    <span>Failed to Send</span>
                 `;
-                submitBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                submitBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
                 
-                // Show confirmation alert with sender's name
-                alert(`Dear ${name}, your message has been sent to Pauline. Thank you for reaching out!`);
+                alert('Sorry, there was an error sending your message. Please try again.');
                 
                 setTimeout(() => {
                     submitBtn.innerHTML = originalContent;
                     submitBtn.style.background = '';
                     submitBtn.disabled = false;
-                    contactForm.reset();
                 }, 3000);
-            }, 1500);
+            }
         });
     }
     
